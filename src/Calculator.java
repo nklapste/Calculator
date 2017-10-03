@@ -174,7 +174,6 @@ public class Calculator {
                         prev_value = token;
                         output.append(token).append(' ');
                     } else {
-
                         throw new RuntimeException(String.format("Missing operator between %s and %s", prev_value, token));
                     }
                 }
@@ -296,14 +295,11 @@ public class Calculator {
                         return val;
 
                     default:
-                        throw new IllegalArgumentException("Incorrect Operator.");
+                        throw new IllegalArgumentException(String.format("Incorrect Operator %s", node.value));
                 }
             } else {
                 throw new IllegalArgumentException("Incorrect input.");
             }
         }
-
-
     }
-
 }
