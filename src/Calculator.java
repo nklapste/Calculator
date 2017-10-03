@@ -5,6 +5,8 @@ import java.util.regex.Pattern;
 /**
  * Assignment 3: Exception handling <br />
  * Calculator using BNF
+ * Name: Nathan Klapstien
+ * ID: 1449872
  */
 public class Calculator {
 
@@ -50,12 +52,10 @@ public class Calculator {
                 "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined
                 "(let x = 5) + y;"              // 6, runtime error: 'y' undefined
         };
-        // TODO: Assignment 3 Part 2-2 -- catch and deal with your exceptions here
         for (int i = 0; i < inputs.length; i++) {
-
             try {
                 System.out.println(String.format("%d -- %-30s %d", i + 1, inputs[i], calc.execExpression(inputs[i])));
-            } catch (Exception e) { //TODO
+            } catch (Exception e) {
                 e.printStackTrace(System.out);
             }
         }
@@ -68,14 +68,12 @@ public class Calculator {
         return ops.containsKey(op);
     }
 
-
     /**
      * Check if a string is a valid value (any number)
      */
     private boolean isValue(String val) {
         return Pattern.matches("[0-9]+", val);
     }
-
 
     /**
      * Check if a string is a valid variable (Starting with a letter then any alpha-numeric afterwards)
@@ -87,6 +85,7 @@ public class Calculator {
     /**
      * Convert a expression string to a reverse polish notation expression string and then convert it to a
      * expression tree
+     *
      * @param exp {@code String}    A normal formatted expression string
      * @return {@code ExpressionTree}
      */
@@ -111,15 +110,11 @@ public class Calculator {
      */
     private int execExpression(String exp) {
         int returnValue = -1;
-        // TODO: Assignment 3 Part 1 -- parse, calculate the expression, and return the correct value
         ExpressionTree expTree = treeify(exp);
         Parser p = new Parser();
         returnValue = p.parse(expTree.root);
-        // TODO: Assignment 3 Part 2-1 -- when come to illegal expressions, raise proper exceptions
-
         return returnValue;
     }
-
 
     private enum Operator {
         ADD(1), SUBTRACT(2), MULTIPLY(3), DIVIDE(4), EXPONENTIATION(6), EQUALS(0);
@@ -168,7 +163,7 @@ public class Calculator {
                     if (bracketStack.peek().equals("(")) {
                         bracketStack.pop();
                     } else {
-                        throw new IllegalArgumentException("syntax error: ')' expected");
+                        throw new IllegalArgumentException("syntax error: '(' expected");
                     }
                     while (!stack.peek().equals("("))
                         output.append(stack.pop()).append(' ');
@@ -189,7 +184,7 @@ public class Calculator {
                 output.append(stack.pop()).append(' ');
 
             if (!bracketStack.isEmpty()) {
-                // raise todo change to general
+                // raise
                 throw new IllegalArgumentException("syntax error: ')' expected");
             }
             return output.toString();
@@ -243,7 +238,8 @@ public class Calculator {
 
         /**
          * Simple integer only exponentiation
-         * @param base base to be raised by the exponent
+         *
+         * @param base     base to be raised by the exponent
          * @param exponent exponent power to multiply the base by (must be positive integer)
          * @return result
          */
