@@ -2,12 +2,27 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 
+import java.util.regex.Matcher;
+
 /**
  * Assignment 3: Exception handling <br />
  * Calculator using BNF
  * Name: Nathan Klapstien
  * ID: 1449872
  */
+
+// custom created exceptions using RuntimeException for ease of use
+class SyntaxError extends RuntimeException{
+    SyntaxError(String s){
+        super(s);
+    }
+}
+class RuntimeError extends RuntimeException{
+    RuntimeError(String s){
+        super(s);
+    }
+}
+
 public class Calculator {
 
 
@@ -35,7 +50,7 @@ public class Calculator {
                 "(let a = 2) + 3 * a - 5;",                                                             // 3, returns 3
                 "(let x = (let y = (let z = 1))) + x + y + z;",                                         // 4, returns 4
                 "1 + (let x = 1) + (let y = 2) + (1 + x) * (1 + y) - (let x = y) - (let y = 1) - x;",   // 5, returns 5
-                "1 + (let a = (let b = 1) + b) + a + 1;",                                               // 6, returns 6 TODO: failing
+                "1 + (let a = (let b = 1) + b) + a + 1;",                                               // 6, returns 6
                 "(let a = (let a = (let a = (let a = 2) + a) + a) + a) - 9;",                           // 7, returns 7
                 "(let x = 2) ^ (let y = 3);",                                                           // 8, returns 8
                 "(let y = 3) ^ (let x = 2);"                                                            // 9, returns 9
@@ -90,15 +105,16 @@ public class Calculator {
      * @return {@code ExpressionTree}
      */
     private ExpressionTree treeify(String exp) {
+        //todo validate lets and other vars
         exp = exp.replaceAll("let ", "");
         exp = exp.replaceAll(";", "");
         exp = exp.replaceAll("\\(", "( ");
         exp = exp.replaceAll("\\)", " )");
 
         ShuntingYard shuntingYard = new ShuntingYard();
-        String rpnexp = shuntingYard.postfix(exp);
+        String rpnExp = shuntingYard.postfix(exp);
 
-        return new ExpressionTree(rpnexp);
+        return new ExpressionTree(rpnExp);
 
     }
 
@@ -109,11 +125,7 @@ public class Calculator {
      * @return {@code int}    The value of the expression
      */
     private int execExpression(String exp) {
-        int returnValue = -1;
-        ExpressionTree expTree = treeify(exp);
-        Parser p = new Parser();
-        returnValue = p.parse(expTree.root);
-        return returnValue;
+        return new Parser().parse(treeify(exp).root);
     }
 
     private enum Operator {
@@ -130,61 +142,71 @@ public class Calculator {
      */
     private class ShuntingYard {
 
-        private boolean isHigerPrec(String op, String sub) {
+        private boolean isHigherPrec(String op, String sub) {
             return (ops.containsKey(sub) && ops.get(sub).precedence >= ops.get(op).precedence);
         }
 
         private String postfix(String infix) {
             StringBuilder output = new StringBuilder();
-            Deque<String> stack = new LinkedList<>();
+
+            // stack for managing operations within brackets
+            Deque<String> stringStack = new LinkedList<>();
+
+            // separate stage for just tallying the brackets
             Deque<String> bracketStack = new LinkedList<>();
 
             String[] expList = infix.split("\\s");
 
+            //TODO CLEAN
+            boolean prevOperator = true;
+            String prevValue = "null";
 
-            boolean prev_operator = true;
-            String prev_value = "null";
             for (String token : expList) {
 
                 // operator
                 if (ops.containsKey(token)) {
-                    while (!stack.isEmpty() && isHigerPrec(token, stack.peek()))
-                        output.append(stack.pop()).append(' ');
-                    stack.push(token);
-                    prev_operator = true;
+                    while (!stringStack.isEmpty() && isHigherPrec(token, stringStack.peek()))
+                        output.append(stringStack.pop()).append(' ');
+                    stringStack.push(token);
+                    prevOperator = true;
 
                     // left parenthesis
                 } else if (token.equals("(")) {
-                    stack.push(token);
+                    stringStack.push(token);
                     bracketStack.push(token);
 
                     // right parenthesis
                 } else if (token.equals(")")) {
-                    if (bracketStack.peek().equals("(")) {
-                        bracketStack.pop();
-                    } else {
-                        throw new IllegalArgumentException("syntax error: '(' expected");
+                    if (!bracketStack.pop().equals("(")) {
+                        throw new SyntaxError("'(' expected");
                     }
-                    while (!stack.peek().equals("("))
-                        output.append(stack.pop()).append(' ');
-                    stack.pop();
+                    while (!stringStack.peek().equals("("))
+                        output.append(stringStack.pop()).append(' ');
+                    stringStack.pop();
                 } else {
-                    if (prev_operator) {
-                        prev_operator = false;
-                        prev_value = token;
-                        output.append(token).append(' ');
+
+                        // todo error on incorrect operators
+                    Pattern p = Pattern.compile("[^a-zA-Z0-9]");
+                    Matcher m =  p.matcher(token);
+                    if (m.find()){
+                        throw new SyntaxError(String.format("'%s' is contains an illegal character '%s'", token, m.group()));
                     } else {
-                        throw new RuntimeException(String.format("Missing operator between %s and %s", prev_value, token));
+                        if (prevOperator) {
+                            prevOperator = false;
+                            prevValue = token;
+                            output.append(token).append(' ');
+                        } else {
+                            throw new SyntaxError(String.format("Missing operator between %s and %s", prevValue, token));
+                        }
                     }
                 }
             }
 
-            while (!stack.isEmpty())
-                output.append(stack.pop()).append(' ');
+            while (!stringStack.isEmpty())
+                output.append(stringStack.pop()).append(' ');
 
             if (!bracketStack.isEmpty()) {
-                // raise
-                throw new IllegalArgumentException("syntax error: ')' expected");
+                throw new SyntaxError("')' expected");
             }
             return output.toString();
         }
@@ -197,7 +219,7 @@ public class Calculator {
 
         private TreeNode root;
 
-        private ExpressionTree(String postfix) {
+        public ExpressionTree(String postfix) {
             if (postfix.length() == 0) {
                 throw new IllegalArgumentException("The postfix cannot be empty!");
             }
@@ -228,7 +250,7 @@ public class Calculator {
     }
 
     /**
-     * Parser class that contains the method of parsing a Expression tree to obtain an interger result
+     * Parser class that contains the method of parsing a Expression tree to obtain an integer result
      */
     private class Parser {
 
@@ -258,47 +280,44 @@ public class Calculator {
                 if (memory.get(node.value) != null) {
                     return memory.get(node.value);
                 } else {
-                    throw new IllegalArgumentException(String.format("Variable: %s was not initialized.", node.value));
+                    throw new RuntimeError(String.format("Variable: '%s' not defined.", node.value));
                 }
-
-            } else if (isOperator(node.value)) {
-                switch (node.value) {
-                    case ("+"):
-                        return parse(node.rChild) + parse(node.lChild);
-                    case ("-"):
-                        return parse(node.rChild) - parse(node.lChild);
-                    case ("*"):
-                        return parse(node.rChild) * parse(node.lChild);
-                    case ("/"):
-                        return parse(node.rChild) / parse(node.lChild);
-                    case ("^"):
-                        return myPow(parse(node.rChild), parse(node.lChild));
-                    case ("="):
-                        int val;
-                        String var;
+            }
+            switch (node.value) {
+                case ("+"):
+                    return parse(node.rChild) + parse(node.lChild);
+                case ("-"):
+                    return parse(node.rChild) - parse(node.lChild);
+                case ("*"):
+                    return parse(node.rChild) * parse(node.lChild);
+                case ("/"):
+                    return parse(node.rChild) / parse(node.lChild);
+                case ("^"):
+                    return myPow(parse(node.rChild), parse(node.lChild));
+                case ("="):
+                    int val;
+                    String var;
+                    try {
                         try {
-                            try {
-                                val = Integer.valueOf(node.lChild.value);
-                            } catch (NumberFormatException e1) {
-                                val = parse(node.lChild);
-                            }
-                            var = node.rChild.value;
-                        } catch (NumberFormatException e) {
-                            try {
-                                val = Integer.valueOf(node.rChild.value);
-                            } catch (NumberFormatException e2) {
-                                val = parse(node.rChild);
-                            }
-                            var = node.lChild.value;
+                            val = Integer.valueOf(node.lChild.value);
+                        } catch (NumberFormatException e1) {
+                            val = parse(node.lChild);
                         }
-                        memory.put(var, val);
-                        return val;
+                        var = node.rChild.value;
+                    } catch (NumberFormatException e) {
+                        try {
+                            val = Integer.valueOf(node.rChild.value);
+                        } catch (NumberFormatException e2) {
+                            val = parse(node.rChild);
+                        }
+                        var = node.lChild.value;
+                    }
+                    memory.put(var, val);
+                    return val;
 
-                    default:
-                        throw new IllegalArgumentException(String.format("Incorrect Operator %s", node.value));
-                }
-            } else {
-                throw new IllegalArgumentException("Incorrect input.");
+                default:
+                    //TODO INSPECT
+                    throw new SyntaxError(String.format("Incorrect Operator %s", node.value));
             }
         }
     }
