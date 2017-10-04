@@ -258,7 +258,7 @@ public class Calculator {
                 if (memory.get(node.value) != null) {
                     return memory.get(node.value);
                 } else {
-                    throw new IllegalArgumentException("Variable was not initialized.");
+                    throw new IllegalArgumentException(String.format("Variable: %s was not initialized.", node.value));
                 }
 
             } else if (isOperator(node.value)) {
