@@ -39,7 +39,10 @@ public class Calculator {
                 "1 + (let a = (let b = 1) + b) + a + 1;",                                               // 6, returns 6
                 "(let a = (let a = (let a = (let a = 2) + a) + a) + a) - 9;",                           // 7, returns 7
                 "(let x = 2) ^ (let y = 3);",                                                           // 8, returns 8
-                "(let y = 3) ^ (let x = 2);"                                                            // 9, returns 9
+                "(let y = 3) ^ (let x = 2);",                                                           // 9, returns 9
+                // custom tests
+                "(let x = 1 + (let y = 2));"        // 10, returns 3
+
         };
         for (int i = 0; i < inputs.length; i++) {
             System.out.println(String.format("%d -- %-90s %d", i + 1, inputs[i], calc.execExpression(inputs[i])));
@@ -52,6 +55,7 @@ public class Calculator {
                 "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected TODO: NOTE: should this be an operator error?
                 "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: NOTE: should this be a missing let operator syntax error?
                 "(let x = 5) + y;",              // 6, runtime error: 'y' undefined
+                // custom tests
                 "(let x =",
                 "(let x = %$;",
                 "(let let x = 5) + y;",
@@ -103,6 +107,26 @@ public class Calculator {
                 }
             }
         }
+
+        // TODO: READ THIS
+        // NOTE: this part is really dealing with checking for an error I think is wrongly categorized.
+        // Error run 4 should really be attributed to a 'expected operator' error as it could be that we could
+        // have the case (let x = 1 + (let y = 2)) this seems valid (as equals is a very low priority math character
+        // thus stuff on the right of the equal should be dealt with first). But if try to accommodate
+        // (let x = 5 let y = 4) its seems that it doesn't need an ')' character but an operator and a second level of
+        // parenthesis to work
+        //
+
+        // TODO: READ THIS
+        // consider this segment a hotfix to deal with error 4's weird suggestion on errors
+        // validate brackets on lets (if let has a space behind it is wrong syntax)
+        p = Pattern.compile(" let");
+        m = p.matcher(exp);
+        // Check all occurrences
+        if (m.find()){
+            throw new SyntaxError(BRACKET_CLOSE_ERROR);
+        }
+
     }
 
     /**
