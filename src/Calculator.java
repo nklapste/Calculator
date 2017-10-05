@@ -64,7 +64,7 @@ public class Calculator {
                 "1 + (2 * 3;",                  // 1, syntax error: ')' expected
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
-                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected
+                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected // TODO failing
                 "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: make proper error
                 "(let x = 5) + y;"              // 6, runtime error: 'y' undefined
         };
@@ -107,7 +107,7 @@ public class Calculator {
      */
     private ExpressionTree treeify(String exp) {
         //todo validate lets and other vars
-        exp = exp.replaceAll("let ", "");
+//        exp = exp.replaceAll("let ", "");
         exp = exp.replaceAll(";", "");
         exp = exp.replaceAll("\\(", "( ");
         exp = exp.replaceAll("\\)", " )");
@@ -160,12 +160,25 @@ public class Calculator {
 
             //TODO CLEAN
             boolean prevOperator = true;
+
+            boolean prevLet = false;
+            boolean prevVar = false;
+            boolean prevEqual = false;
+
             String prevValue = "null";
 
             for (String token : expList) {
 
                 // operator
                 if (ops.containsKey(token)) {
+
+                    if (prevVar && token.equals("=")){
+                        prevEqual = true;
+                        prevVar = false;
+                    } else if (prevVar) {
+                        throw new SyntaxError("'=' expected");
+                    }
+
                     while (!stringStack.isEmpty() && isHigherPrec(token, stringStack.peek()))
                         output.append(stringStack.pop()).append(' ');
                     stringStack.push(token);
@@ -176,16 +189,51 @@ public class Calculator {
                     stringStack.push(token);
                     bracketStack.push(token);
 
+                    // check if operator was before
+                    if(!prevOperator){
+                        throw new SyntaxError(String.format("Missing operator between %s and %s", prevValue, token));
+                    }
+
                     // right parenthesis
                 } else if (token.equals(")")) {
                     if (!bracketStack.pop().equals("(")) {
                         throw new SyntaxError("'(' expected");
                     }
+
+                    // add contents contained in bracket pair to string stack
                     while (!stringStack.peek().equals("("))
                         output.append(stringStack.pop()).append(' ');
                     stringStack.pop();
-                } else {
 
+                    // set prev operator as false
+                    prevOperator = false;
+                    prevValue = ")";
+
+                } else if (token.equals("let") && !prevLet){
+                    // todo deal with case
+                    prevLet = true;
+                    // check if operator was before
+                    if(!prevOperator){
+                        throw new SyntaxError(String.format("Missing operator between %s and %s", prevValue, token));
+                    }
+                } else {
+                    if (prevEqual && (isValue(token)|isVariable(token))){
+                        prevEqual = false;
+                    }   else if (prevEqual){
+                        throw new SyntaxError("variable or value expected after '='");
+                    }
+
+
+                    if(prevLet && isVariable(token)){
+                        prevVar = true;
+                        prevLet = false;
+                    } else if (prevLet){
+                        throw new SyntaxError("variable expected to be declared after 'let'");
+                    }
+
+
+
+                        // TODO: clean
                         // TODO: error on incorrect operators
                     Pattern p = Pattern.compile("[^a-zA-Z0-9]");
                     Matcher m =  p.matcher(token);
@@ -196,7 +244,7 @@ public class Calculator {
                             prevOperator = false;
                             prevValue = token;
                             output.append(token).append(' ');
-                        } else {
+                        } else if(!prevVar){
                             throw new SyntaxError(String.format("Missing operator between %s and %s", prevValue, token));
                         }
                     }
