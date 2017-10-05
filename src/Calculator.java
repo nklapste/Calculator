@@ -61,8 +61,12 @@ public class Calculator {
                 "1 + (2 * 3;",                  // 1, syntax error: ')' expected
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
-                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected TODO: READ THIS: should this be an operator error?
-                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: READ THIS: should this be a missing let operator syntax error as specified in assignment?
+                // TODO: READ THIS: should this be an operator error instead?
+                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected
+                // TODO: READ THIS: should this be a missing let operator syntax error as specified in assignment?
+                // If not wouldn't it just result into a missing operator syntax error instead
+                // (one of my older build did this instead)
+                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined
                 "(let x = 5) + y;",              // 6, runtime error: 'y' undefined
                 // custom tests
                 "(let x =",
@@ -88,7 +92,7 @@ public class Calculator {
         Pattern p;
         Matcher m;
 
-        // find all matches of a "variable ="  occurrence
+        // find all matches of a "variable ="  occurrence and ensure that a 'let' command is in front of it
         p = Pattern.compile("([a-zA-Z][a-zA-Z0-9]*) =");
         m = p.matcher(exp);
         // loop over all occurrences
