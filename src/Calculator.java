@@ -64,7 +64,7 @@ public class Calculator {
                 "1 + (2 * 3;",                  // 1, syntax error: ')' expected
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
-                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected
+                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected //todo
                 "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined NOTE: should this be a missing let operator syntax error?
                 "(let x = 5) + y;"              // 6, runtime error: 'y' undefined
         };
@@ -262,7 +262,7 @@ public class Calculator {
 
                     // check if operator was before
                     if(!prevOperator){
-                        throw new SyntaxError(String.format("Missing operator between %s and %s", prevValue, token));
+                        throw new SyntaxError("operator expected");
                     }
 
                     // right parenthesis
@@ -285,7 +285,7 @@ public class Calculator {
                     prevLet = true;
                     // check if operator was before
                     if(!prevOperator){
-                        throw new SyntaxError(String.format("Missing operator between %s and %s", prevValue, token));
+                        throw new SyntaxError("operator expected");
                     }
                 } else {
                     // todo clean
