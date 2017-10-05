@@ -14,12 +14,14 @@ import java.util.regex.Pattern;
 public class Calculator {
 
     // Error report stings for clarity
-    private static String LET_ERROR = "'let' in 'let var = val' operation expected";
-    private static String EQUAL_ERROR = "'=' expected";
-    private static String OPERATOR_ERROR = "operator expected";
+    private static String BAD_CHARACTER_ERROR = "illegal character '%s'";
     private static String BRACKET_OPEN_ERROR = "'(' expected";
     private static String BRACKET_CLOSE_ERROR = "')' expected";
     private static String COLON_ERROR = "closing ';' expected";
+    private static String EQUAL_ERROR = "'=' expected";
+    private static String LET_ERROR = "'let' in 'let var = val' operation expected";
+    private static String OPERATOR_ERROR = "operator expected";
+    private static String UNDEFINED_ERROR = "%s undefined";
 
     /**
      * Main entry
@@ -112,10 +114,10 @@ public class Calculator {
         // NOTE: this part is really dealing with checking for an error I think is wrongly categorized.
         // Error run 4 should really be attributed to a 'expected operator' error as it could be that we could
         // have the case (let x = 1 + (let y = 2)) this seems valid (as equals is a very low priority math character
-        // thus stuff on the right of the equal should be dealt with first). But if try to accommodate
-        // (let x = 5 let y = 4) its seems that it doesn't need an ')' character but an operator and a second level of
-        // parenthesis to work
-        //
+        // thus stuff on the right of the equal should be dealt with first). But if I try to accommodate
+        // (let x = 5 let y = 4) its seems that it doesn't need an ')' some operator and a second level of
+        // parenthesis to work.
+
 
         // TODO: READ THIS
         // consider this segment a hotfix to deal with error 4's weird suggestion on errors
@@ -232,7 +234,7 @@ public class Calculator {
             Pattern p = Pattern.compile("[^a-zA-Z0-9]");
             Matcher m = p.matcher(token);
             if (m.find())
-                throw new SyntaxError(String.format("illegal character '%s'", m.group()));
+                throw new SyntaxError(String.format(BAD_CHARACTER_ERROR, m.group()));
         }
 
         private boolean isHigherPrec(String op, String sub) {
@@ -399,7 +401,7 @@ public class Calculator {
                 if (memory.get(node.value) != null) {
                     return memory.get(node.value);
                 } else {
-                    throw new RuntimeError(String.format("'%s' undefined", node.value));
+                    throw new RuntimeError(String.format(UNDEFINED_ERROR, node.value));
                 }
             }
             switch (node.value) {
@@ -427,7 +429,7 @@ public class Calculator {
                     return val;
 
                 default:
-                    throw new SyntaxError(String.format("invalid operator %s", node.value));
+                    throw new SyntaxError(String.format(BAD_CHARACTER_ERROR, node.value));
             }
         }
 
