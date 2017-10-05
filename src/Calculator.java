@@ -8,12 +8,17 @@ import java.util.regex.Pattern;
  * <p>
  * Name: Nathan Klapstien
  * ID: 1449872
+ *
+ * Please note of some of the TODO: READ THIS
+ * marks within this code to note of some of my questions
+ * within this assignment and the design choices I made
+ * because of it.
  */
 
 
 public class Calculator {
 
-    // Error report stings for clarity
+    // Error report stings for globals for easy access and clarity
     private static String BAD_CHARACTER_ERROR = "illegal character '%s'";
     private static String BRACKET_OPEN_ERROR = "'(' expected";
     private static String BRACKET_CLOSE_ERROR = "')' expected";
@@ -22,6 +27,7 @@ public class Calculator {
     private static String LET_ERROR = "'let' in 'let var = val' operation expected";
     private static String OPERATOR_ERROR = "operator expected";
     private static String UNDEFINED_ERROR = "%s undefined";
+
 
     /**
      * Main entry
@@ -49,13 +55,14 @@ public class Calculator {
         for (int i = 0; i < inputs.length; i++) {
             System.out.println(String.format("%d -- %-90s %d", i + 1, inputs[i], calc.execExpression(inputs[i])));
         }
+
         // Part 2
         inputs = new String[]{
                 "1 + (2 * 3;",                  // 1, syntax error: ')' expected
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
-                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected TODO: NOTE: should this be an operator error?
-                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: NOTE: should this be a missing let operator syntax error as specified in assignment?
+                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected TODO: READ THIS: should this be an operator error?
+                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: READ THIS: should this be a missing let operator syntax error as specified in assignment?
                 "(let x = 5) + y;",              // 6, runtime error: 'y' undefined
                 // custom tests
                 "(let x =",
@@ -71,6 +78,7 @@ public class Calculator {
         }
     }
 
+
     /**
      * Check if all "let variable =" components are valid syntax
      *
@@ -83,7 +91,7 @@ public class Calculator {
         // find all matches of a "variable ="  occurrence
         p = Pattern.compile("([a-zA-Z][a-zA-Z0-9]*) =");
         m = p.matcher(exp);
-        // Check all occurrences
+        // loop over all occurrences
         while (m.find()) {
             if (m.start() <= 3) {
                 throw new SyntaxError(LET_ERROR);
@@ -98,7 +106,7 @@ public class Calculator {
         // find all matches of a "let variable" occurrence
         p = Pattern.compile("let ([a-zA-Z][a-zA-Z0-9]*)");
         m = p.matcher(exp);
-        // Check all occurrences
+        // loop over all occurrences
         while (m.find()) {
             if (exp.length() <= m.end() + 4) {
                 throw new SyntaxError(EQUAL_ERROR);
@@ -116,7 +124,7 @@ public class Calculator {
         // have the case (let x = 1 + (let y = 2)) this seems valid (as equals is a very low priority math character
         // thus stuff on the right of the equal should be dealt with first). But if I try to accommodate
         // (let x = 5 let y = 4) its seems that it doesn't need an ')' some operator and a second level of
-        // parenthesis to work.
+        // parenthesis to work
 
 
         // TODO: READ THIS
@@ -128,8 +136,8 @@ public class Calculator {
         if (m.find()){
             throw new SyntaxError(BRACKET_CLOSE_ERROR);
         }
-
     }
+
 
     /**
      * Check that an ending semicolon exists other existing (and erroneous) semi colon's will be caught later
@@ -144,26 +152,36 @@ public class Calculator {
         }
     }
 
+
     /**
      * Check if a string is a valid operator (+ - * % ^ =)
+     *
+     * @return {@code boolean}
      */
     private boolean isOperator(String op) {
         return new ShuntingYard().ops.containsKey(op);
     }
 
+
     /**
      * Check if a string is a valid value (any number)
+     *
+     * @return {@code boolean}
      */
     private boolean isValue(String val) {
         return Pattern.matches("[0-9]+", val);
     }
 
+
     /**
      * Check if a string is a valid variable (Starting with a letter then any alpha-numeric afterwards)
+     *
+     * @return {@code boolean}
      */
     private boolean isVariable(String var) {
         return Pattern.matches("[a-zA-Z][a-zA-Z0-9]*", var);
     }
+
 
     /**
      * Execute the expression, and return the correct value
@@ -196,6 +214,7 @@ public class Calculator {
         return expTree.parse();
     }
 
+
     // custom created exceptions using RuntimeException for ease of use
     static class SyntaxError extends RuntimeException {
         SyntaxError(String s) {
@@ -203,14 +222,16 @@ public class Calculator {
         }
     }
 
+
     static class RuntimeError extends RuntimeException {
         RuntimeError(String s) {
             super(s);
         }
     }
 
+
     /**
-     * Dijkstra's shuntingyard algorithm converting normal notation math to reverse polish notation (rpn)
+     * Dijkstra's shunting yard algorithm converting normal notation math to reverse polish notation (rpn)
      */
     public static class ShuntingYard {
 
@@ -223,6 +244,7 @@ public class Calculator {
             put("^", Operator.EXPONENTIATION);
             put("=", Operator.EQUALS);
         }};
+
 
         /**
          * Check that a inputted expression character token is a valid character
@@ -237,9 +259,18 @@ public class Calculator {
                 throw new SyntaxError(String.format(BAD_CHARACTER_ERROR, m.group()));
         }
 
+
+        /**
+         * check if the operator (op) is higher order of operation of other operator (sub)
+         *
+         * @param op {@code String}
+         * @param sub {@code String}
+         * @return {@code boolean}
+         */
         private boolean isHigherPrec(String op, String sub) {
             return (ops.containsKey(sub) && ops.get(sub).precedence >= ops.get(op).precedence);
         }
+
 
         /**
          * Iterative methods that converts expression strings to reverse polish notation
@@ -257,19 +288,18 @@ public class Calculator {
             // separate stage for just tallying the brackets
             Deque<String> bracketStack = new LinkedList<>();
 
-            // flag noting that an operator was the previous token assume true for start of parsing
+            // flag noting that an operator was the previous token
+            // note: assume true for start of parsing
             boolean prevOperator = true;
 
             for (String token : infix.split("\\s")) {
 
                 // operator
                 if (ops.containsKey(token)) {
-
                     while (!stringStack.isEmpty() && isHigherPrec(token, stringStack.peek()))
                         output.append(stringStack.pop()).append(' ');
                     stringStack.push(token);
 
-                    // set flag noting that an operator was the last token
                     prevOperator = true;
 
                     // left parenthesis
@@ -282,7 +312,6 @@ public class Calculator {
                     stringStack.push(token);
                     bracketStack.push(token);
 
-
                     // right parenthesis
                 } else if (token.equals(")")) {
                     if (!bracketStack.pop().equals("(")) {
@@ -294,7 +323,6 @@ public class Calculator {
                         output.append(stringStack.pop()).append(' ');
                     stringStack.pop();
 
-                    // set prev operator as false
                     prevOperator = false;
 
                     // ignore let values
@@ -302,17 +330,15 @@ public class Calculator {
 
                     // other token values
                 } else {
-
-                    // check if the token is a valid character
                     validateToken(token);
 
                     if (prevOperator) {
-                        prevOperator = false;
                         output.append(token).append(' ');
+
+                        prevOperator = false;
                     } else {
                         throw new SyntaxError(OPERATOR_ERROR);
                     }
-
                 }
             }
 
@@ -335,6 +361,7 @@ public class Calculator {
             }
         }
     }
+
 
     /**
      * The Expression tree for parsing and equating a reverse polish notation string
@@ -363,6 +390,7 @@ public class Calculator {
             root = nodes.pop();
         }
 
+
         /**
          * Simple integer only exponentiation for parsing
          *
@@ -378,6 +406,7 @@ public class Calculator {
             return result;
         }
 
+
         /**
          * parse Expression tree via internal methods to obtain an integer result
          *
@@ -387,10 +416,11 @@ public class Calculator {
             return parser(root);
         }
 
+
         /**
-         * method of parsing a Expression tree recursively to obtain an integer result
+         * recursive method of parsing a Expression tree to obtain an integer result
          *
-         * @param node {@code TreeNode}
+         * @param node {@code ExpressionTree.TreeNode}
          * @return {@code int}
          */
         private int parser(TreeNode node) {
@@ -432,6 +462,7 @@ public class Calculator {
                     throw new SyntaxError(String.format(BAD_CHARACTER_ERROR, node.value));
             }
         }
+
 
         /**
          * Node of an Expression Tree
