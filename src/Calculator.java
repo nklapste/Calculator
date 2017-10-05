@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public class Calculator {
 
     // Error report stings for clarity
-    private static String LET_ERROR = "'let' in 'var =' operation expected";
+    private static String LET_ERROR = "'let' in 'let var = val' operation expected";
     private static String EQUAL_ERROR = "'=' expected";
     private static String OPERATOR_ERROR = "operator expected";
     private static String BRACKET_OPEN_ERROR = "'(' expected";
@@ -53,7 +53,7 @@ public class Calculator {
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
                 "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected TODO: NOTE: should this be an operator error?
-                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: NOTE: should this be a missing let operator syntax error?
+                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: NOTE: should this be a missing let operator syntax error as specified in assignment?
                 "(let x = 5) + y;",              // 6, runtime error: 'y' undefined
                 // custom tests
                 "(let x =",
@@ -295,9 +295,10 @@ public class Calculator {
                     // set prev operator as false
                     prevOperator = false;
 
+                    // ignore let values
                 } else if (token.equals("let")) {
-                    // pass on lets
-                    // this was an old bind spot for methods
+
+                    // other token values
                 } else {
 
                     // check if the token is a valid character
