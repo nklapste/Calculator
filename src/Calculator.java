@@ -64,8 +64,8 @@ public class Calculator {
                 "1 + (2 * 3;",                  // 1, syntax error: ')' expected
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
-                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected // TODO failing
-                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: make proper error
+                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected
+                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined NOTE: should this be a missing let operator syntax error?
                 "(let x = 5) + y;"              // 6, runtime error: 'y' undefined
         };
         for (int i = 0; i < inputs.length; i++) {
@@ -76,6 +76,60 @@ public class Calculator {
             }
         }
     }
+
+    //TODO
+
+    /**
+     * Check if all "let variable =" components are valid syntax throws an SyntaxError if invalid Syntax
+     * @param  exp {@code string}
+     */
+    private void checkEquals(String exp) {
+        Pattern p;
+        Matcher m;
+
+        // find all matches of a "variable ="  occurrence
+        p = Pattern.compile("([a-zA-Z][a-zA-Z0-9]*) =");
+        m = p.matcher(exp);
+        // Check all occurrences
+        while (m.find()) {
+            if (m.start() <= 3) {
+                throw new SyntaxError("Missing 'let' in 'var =' operation");
+            } else {
+                String check = exp.substring(m.start() - 4, m.start()-1);
+                if (!check.equals("let")){
+                    throw new SyntaxError("Missing 'let' in 'var =' operation");
+                }
+            }
+        }
+
+        // find all matches of a "let variable" occurrence
+        p = Pattern.compile("let ([a-zA-Z][a-zA-Z0-9]*)");
+        m = p.matcher(exp);
+        // Check all occurrences
+        while (m.find()) {
+            if (exp.length() <= m.end()+4) {
+                throw new SyntaxError("'=' expected");
+            } else {
+                String check = exp.substring(m.end(), m.end()+3);
+                if (!check.equals(" = ")){
+                    throw new SyntaxError("'=' expected");
+                }
+            }
+        }
+    }
+
+    /**
+     * Check that an ending semicolon exists
+     * @param exp
+     */
+    public void checkSemiColons(String exp){
+        Pattern p = Pattern.compile(";$");
+        Matcher m =  p.matcher(exp);
+        if (!m.find()){
+            throw new SyntaxError("Missing closing ';'");
+        }
+    }
+
 
     /**
      * Check if a string is a valid operator (+ - * % ^ =)
@@ -107,8 +161,13 @@ public class Calculator {
      */
     private ExpressionTree treeify(String exp) {
         //todo validate lets and other vars
-//        exp = exp.replaceAll("let ", "");
-        exp = exp.replaceAll(";", "");
+        checkEquals(exp);
+        checkSemiColons(exp);
+
+        // chop of ending ';' as it is not needed
+        exp = exp.replaceAll(";$","");
+
+        // add spaces between "(" and ")" to make parsing easier
         exp = exp.replaceAll("\\(", "( ");
         exp = exp.replaceAll("\\)", " )");
 
@@ -158,30 +217,42 @@ public class Calculator {
 
             String[] expList = infix.split("\\s");
 
-            //TODO CLEAN
+            // flag noting that an operator was the previous token assume true for start of parsing
             boolean prevOperator = true;
 
+            // variables for additional checking between
+
+            // flag noting that the let operator was the previous token
             boolean prevLet = false;
+
+            // flag noting that a let variable was the previous token
             boolean prevVar = false;
+
+            // flag noting that the equal operator was the previous token
             boolean prevEqual = false;
 
+            // storage of the previous valid value/variable token
             String prevValue = "null";
 
             for (String token : expList) {
 
                 // operator
                 if (ops.containsKey(token)) {
-
+                    //todo clean
                     if (prevVar && token.equals("=")){
                         prevEqual = true;
                         prevVar = false;
                     } else if (prevVar) {
                         throw new SyntaxError("'=' expected");
+                    } else if (token.equals("=")) {
+                        throw new SyntaxError("Missing 'let' in 'var =' operation");
                     }
 
                     while (!stringStack.isEmpty() && isHigherPrec(token, stringStack.peek()))
                         output.append(stringStack.pop()).append(' ');
                     stringStack.push(token);
+
+                    // set flag noting that an operator was the last token
                     prevOperator = true;
 
                     // left parenthesis
@@ -210,17 +281,18 @@ public class Calculator {
                     prevValue = ")";
 
                 } else if (token.equals("let") && !prevLet){
-                    // todo deal with case
+                    //todo clean
                     prevLet = true;
                     // check if operator was before
                     if(!prevOperator){
                         throw new SyntaxError(String.format("Missing operator between %s and %s", prevValue, token));
                     }
                 } else {
+                    // todo clean
                     if (prevEqual && (isValue(token)|isVariable(token))){
                         prevEqual = false;
                     }   else if (prevEqual){
-                        throw new SyntaxError("variable or value expected after '='");
+                        throw new SyntaxError("Variable or value expected after '='");
                     }
 
 
@@ -228,13 +300,10 @@ public class Calculator {
                         prevVar = true;
                         prevLet = false;
                     } else if (prevLet){
-                        throw new SyntaxError("variable expected to be declared after 'let'");
+                        throw new SyntaxError("Variable expected to be declared after 'let'");
                     }
 
-
-
                         // TODO: clean
-                        // TODO: error on incorrect operators
                     Pattern p = Pattern.compile("[^a-zA-Z0-9]");
                     Matcher m =  p.matcher(token);
                     if (m.find()){
@@ -329,7 +398,7 @@ public class Calculator {
                 if (memory.get(node.value) != null) {
                     return memory.get(node.value);
                 } else {
-                    throw new RuntimeError(String.format("Variable: '%s' not defined.", node.value));
+                    throw new RuntimeError(String.format("'%s' undefined.", node.value));
                 }
             }
             switch (node.value) {
@@ -365,7 +434,6 @@ public class Calculator {
                     return val;
 
                 default:
-                    //TODO: inspect
                     throw new SyntaxError(String.format("Incorrect Operator %s", node.value));
             }
         }
