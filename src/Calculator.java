@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 /**
  * Assignment 3: Exception handling <br />
  * Calculator using BNF
+ *
  * Name: Nathan Klapstien
  * ID: 1449872
  */
@@ -64,7 +65,7 @@ public class Calculator {
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
                 "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected
-                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined
+                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: make proper error
                 "(let x = 5) + y;"              // 6, runtime error: 'y' undefined
         };
         for (int i = 0; i < inputs.length; i++) {
@@ -185,7 +186,7 @@ public class Calculator {
                     stringStack.pop();
                 } else {
 
-                        // todo error on incorrect operators
+                        // TODO: error on incorrect operators
                     Pattern p = Pattern.compile("[^a-zA-Z0-9]");
                     Matcher m =  p.matcher(token);
                     if (m.find()){
@@ -316,7 +317,7 @@ public class Calculator {
                     return val;
 
                 default:
-                    //TODO INSPECT
+                    //TODO: inspect
                     throw new SyntaxError(String.format("Incorrect Operator %s", node.value));
             }
         }
