@@ -1,11 +1,11 @@
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Assignment 3: Exception handling <br />
  * Calculator using BNF
- *
+ * <p>
  * Name: Nathan Klapstien
  * ID: 1449872
  */
@@ -13,18 +13,7 @@ import java.util.regex.Matcher;
 
 public class Calculator {
 
-    // custom created exceptions using RuntimeException for ease of use
-    static class SyntaxError extends RuntimeException{
-        SyntaxError(String s){
-            super(s);
-        }
-    }
-    static class RuntimeError extends RuntimeException{
-        RuntimeError(String s){
-            super(s);
-        }
-    }
-
+    // Error report stings for clarity
     private static String LET_ERROR = "'let' in 'var =' operation expected";
     private static String EQUAL_ERROR = "'=' expected";
     private static String OPERATOR_ERROR = "operator expected";
@@ -60,8 +49,8 @@ public class Calculator {
                 "1 + (2 * 3;",                  // 1, syntax error: ')' expected
                 "(let x 5) + x;",               // 2, syntax error: '=' expected
                 "(let x = 5) (let y = 6);",     // 3, syntax error: operator expected
-                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected //todo
-                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined NOTE: should this be a missing let operator syntax error?
+                "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected TODO: NOTE: should this be an operator error?
+                "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined TODO: NOTE: should this be a missing let operator syntax error?
                 "(let x = 5) + y;",              // 6, runtime error: 'y' undefined
                 "(let x =",
                 "(let x = %$;",
@@ -78,7 +67,8 @@ public class Calculator {
 
     /**
      * Check if all "let variable =" components are valid syntax
-     * @param  exp {@code string}
+     *
+     * @param exp {@code string}
      */
     private void validateLets(String exp) {
         Pattern p;
@@ -92,8 +82,8 @@ public class Calculator {
             if (m.start() <= 3) {
                 throw new SyntaxError(LET_ERROR);
             } else {
-                String check = exp.substring(m.start() - 4, m.start()-1);
-                if (!check.equals("let")){
+                String check = exp.substring(m.start() - 4, m.start() - 1);
+                if (!check.equals("let")) {
                     throw new SyntaxError(LET_ERROR);
                 }
             }
@@ -104,11 +94,11 @@ public class Calculator {
         m = p.matcher(exp);
         // Check all occurrences
         while (m.find()) {
-            if (exp.length() <= m.end()+4) {
+            if (exp.length() <= m.end() + 4) {
                 throw new SyntaxError(EQUAL_ERROR);
             } else {
-                String check = exp.substring(m.end(), m.end()+3);
-                if (!check.equals(" = ")){
+                String check = exp.substring(m.end(), m.end() + 3);
+                if (!check.equals(" = ")) {
                     throw new SyntaxError(EQUAL_ERROR);
                 }
             }
@@ -117,16 +107,16 @@ public class Calculator {
 
     /**
      * Check that an ending semicolon exists other existing (and erroneous) semi colon's will be caught later
+     *
      * @param exp {@code String}
      */
-    private void validateSemiColon(String exp){
+    private void validateSemiColon(String exp) {
         Pattern p = Pattern.compile(";$");
-        Matcher m =  p.matcher(exp);
-        if (!m.find()){
+        Matcher m = p.matcher(exp);
+        if (!m.find()) {
             throw new SyntaxError(COLON_ERROR);
         }
     }
-
 
     /**
      * Check if a string is a valid operator (+ - * % ^ =)
@@ -149,12 +139,11 @@ public class Calculator {
         return Pattern.matches("[a-zA-Z][a-zA-Z0-9]*", var);
     }
 
-
     /**
      * Execute the expression, and return the correct value
      *
      * @param exp {@code String} The expression string
-     * @return result {@code int}    The value of the executed expression
+     * @return {@code int}    The value of the executed expression
      */
     private int execExpression(String exp) {
 
@@ -165,7 +154,7 @@ public class Calculator {
         validateSemiColon(exp);
 
         // chop of ending ';' as it is not needed
-        exp = exp.replaceAll(";$","");
+        exp = exp.replaceAll(";$", "");
 
         // add spaces between "(" and ")" to make parsing easier
         exp = exp.replaceAll("\\(", "( ");
@@ -178,8 +167,20 @@ public class Calculator {
         ExpressionTree expTree = new ExpressionTree(rpnExp);
 
         // parse the expression tree and obtain its results
-        int result = expTree.parse();
-        return result;
+        return expTree.parse();
+    }
+
+    // custom created exceptions using RuntimeException for ease of use
+    static class SyntaxError extends RuntimeException {
+        SyntaxError(String s) {
+            super(s);
+        }
+    }
+
+    static class RuntimeError extends RuntimeException {
+        RuntimeError(String s) {
+            super(s);
+        }
     }
 
     /**
@@ -188,19 +189,7 @@ public class Calculator {
     public static class ShuntingYard {
 
 
-        /**
-         * Check that a inputted expression character token is a valid character
-         * If invalid report the illegal character
-         * @param token {@code String}
-         */
-        private void validateToken(String token){
-            Pattern p = Pattern.compile("[^a-zA-Z0-9]");
-            Matcher m =  p.matcher(token);
-            if (m.find())
-                throw new SyntaxError(String.format("illegal character '%s'", m.group()));
-        }
-
-        private Map<String, Operator> ops = new HashMap<String, Operator>() {{
+        private Map<String, Operator> ops = new HashMap<>() {{
             put("+", Operator.ADD);
             put("-", Operator.SUBTRACT);
             put("*", Operator.MULTIPLY);
@@ -209,13 +198,17 @@ public class Calculator {
             put("=", Operator.EQUALS);
         }};
 
-        public enum Operator {
-            ADD(1), SUBTRACT(2), MULTIPLY(3), DIVIDE(4), EXPONENTIATION(6), EQUALS(0);
-            final int precedence;
-
-            Operator(int p) {
-                precedence = p;
-            }
+        /**
+         * Check that a inputted expression character token is a valid character
+         * If invalid report the illegal character
+         *
+         * @param token {@code String}
+         */
+        private void validateToken(String token) {
+            Pattern p = Pattern.compile("[^a-zA-Z0-9]");
+            Matcher m = p.matcher(token);
+            if (m.find())
+                throw new SyntaxError(String.format("illegal character '%s'", m.group()));
         }
 
         private boolean isHigherPrec(String op, String sub) {
@@ -224,6 +217,7 @@ public class Calculator {
 
         /**
          * Iterative methods that converts expression strings to reverse polish notation
+         *
          * @param infix {@code String}
          * @return {@code String}
          */
@@ -255,7 +249,7 @@ public class Calculator {
                     // left parenthesis
                 } else if (token.equals("(")) {
                     // check if operator was before
-                    if(!prevOperator){
+                    if (!prevOperator) {
                         throw new SyntaxError(OPERATOR_ERROR);
                     }
 
@@ -277,8 +271,9 @@ public class Calculator {
                     // set prev operator as false
                     prevOperator = false;
 
-                } else if (token.equals("let")){
-                    // pass
+                } else if (token.equals("let")) {
+                    // pass on lets
+                    // this was an old bind spot for methods
                 } else {
 
                     // check if the token is a valid character
@@ -303,6 +298,15 @@ public class Calculator {
             }
             return output.toString();
         }
+
+        public enum Operator {
+            ADD(1), SUBTRACT(2), MULTIPLY(3), DIVIDE(4), EXPONENTIATION(6), EQUALS(0);
+            final int precedence;
+
+            Operator(int p) {
+                precedence = p;
+            }
+        }
     }
 
     /**
@@ -311,6 +315,8 @@ public class Calculator {
     private class ExpressionTree {
 
         private TreeNode root;
+        // Parser memory hashmap
+        private HashMap<String, Integer> memory = new HashMap<>();
 
         private ExpressionTree(String postfix) {
             if (postfix.length() == 0) {
@@ -331,23 +337,6 @@ public class Calculator {
         }
 
         /**
-         * Node of an Expression Tree
-         */
-        private class TreeNode {
-            private String value;
-            private TreeNode lChild = null, rChild = null;
-
-            private TreeNode(String value, TreeNode lChild, TreeNode rChild) {
-                this.value = value;
-                this.lChild = lChild;
-                this.rChild = rChild;
-            }
-        }
-
-        // Parser memory hashmap
-        private HashMap<String, Integer> memory = new HashMap<>();
-
-        /**
          * Simple integer only exponentiation for parsing
          *
          * @param base     base to be raised by the exponent
@@ -362,17 +351,18 @@ public class Calculator {
             return result;
         }
 
-
         /**
          * parse Expression tree via internal methods to obtain an integer result
+         *
          * @ return {@code int}
          */
-        public int parse(){
+        private int parse() {
             return parser(root);
         }
 
         /**
          * method of parsing a Expression tree recursively to obtain an integer result
+         *
          * @param node {@code TreeNode}
          * @return {@code int}
          */
@@ -401,19 +391,11 @@ public class Calculator {
                 case ("="):
                     int val;
                     String var;
-                    try { //todo clean
-                        try {
-                            val = Integer.valueOf(node.lChild.value);
-                        } catch (NumberFormatException e1) {
-                            val = parser(node.lChild);
-                        }
+                    try {
+                        val = parser(node.lChild);
                         var = node.rChild.value;
                     } catch (NumberFormatException e) {
-                        try {
-                            val = Integer.valueOf(node.rChild.value);
-                        } catch (NumberFormatException e2) {
-                            val = parser(node.rChild);
-                        }
+                        val = parser(node.rChild);
                         var = node.lChild.value;
                     }
                     memory.put(var, val);
@@ -421,6 +403,20 @@ public class Calculator {
 
                 default:
                     throw new SyntaxError(String.format("invalid operator %s", node.value));
+            }
+        }
+
+        /**
+         * Node of an Expression Tree
+         */
+        private class TreeNode {
+            private String value;
+            private TreeNode lChild = null, rChild = null;
+
+            private TreeNode(String value, TreeNode lChild, TreeNode rChild) {
+                this.value = value;
+                this.lChild = lChild;
+                this.rChild = rChild;
             }
         }
     }
