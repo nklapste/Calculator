@@ -24,7 +24,7 @@ public class Calculator {
     private static String BRACKET_CLOSE_ERROR = "')' expected";
     private static String COLON_ERROR = "closing ';' expected";
     private static String EQUAL_ERROR = "'=' expected";
-    private static String LET_ERROR = "'let' in 'let var = val' operation expected";
+    private static String LET_ERROR = "missing 'let' in 'let var = val' operation";
     private static String OPERATOR_ERROR = "operator expected";
     private static String UNDEFINED_ERROR = "%s undefined";
 
@@ -65,11 +65,13 @@ public class Calculator {
                 "(let x = 5 let y = 6);",       // 4, syntax error: ')' expected
                 // TODO: READ THIS: should this be a missing let operator syntax error as specified in assignment?
                 // If not wouldn't it just result into a missing operator syntax error instead
-                // (one of my older build did this instead)
+                // (one of my older builds did this instead)
+                // Anyways this error seems kinda loaded with many problems as it can fail in many ways therefore I
+                // just left it as is
                 "(ler x = 5) ^ (let y = 6);",   // 5, runtime error: 'ler' undefined
                 "(let x = 5) + y;",              // 6, runtime error: 'y' undefined
                 // custom tests
-                "(let x =",
+                "(let x = );",
                 "(let x = %$;",
                 "(let let x = 5) + y;",
         };
@@ -92,7 +94,7 @@ public class Calculator {
         Pattern p;
         Matcher m;
 
-        // find all matches of a "variable ="  occurrence and ensure that a 'let' command is in front of it
+        // find all matches of a "variable ="  occurrence and ensure that a "let" command is behind it
         p = Pattern.compile("([a-zA-Z][a-zA-Z0-9]*) =");
         m = p.matcher(exp);
         // loop over all occurrences
@@ -107,7 +109,7 @@ public class Calculator {
             }
         }
 
-        // find all matches of a "let variable" occurrence
+        // find all matches of a "let variable" occurrence and ensure that a " = " is in front of it
         p = Pattern.compile("let ([a-zA-Z][a-zA-Z0-9]*)");
         m = p.matcher(exp);
         // loop over all occurrences
